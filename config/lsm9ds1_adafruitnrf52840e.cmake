@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2021 Sung Ho Park and CSOS
+# Copyright (c) 2022 Sung Ho Park and CSOS
 #
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -41,5 +41,5 @@ set(_temp_softdevice_name "blank")
 get_filename_component(_tmp_source_dir "${PROJECT_LIBRARY_DIR}/ArduinoCore-API_wrapper/source/arduinocore_api_ubinos/arch/arm/cortexm/${_tmp_board_model}" ABSOLUTE)
 
 include_directories(${_tmp_source_dir})
-include_directories(${_tmp_source_dir}/${_temp_softdevice_name}/config)
+include_directories(${_tmp_source_dir}/blank/config)
 
