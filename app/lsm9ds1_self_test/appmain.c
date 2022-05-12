@@ -11,7 +11,7 @@
 #include <stdlib.h>
 #include <time.h>
 
-#include <Arduino.h>
+#include "main.h"
 
 static void root_func(void * arg);
 
@@ -32,16 +32,10 @@ static void root_func(void * arg)
 {
     printf("\n\n\n");
     printf("================================================================================\n");
-    printf("root_func (build time: %s %s)\n", __TIME__, __DATE__);
+    printf("lis9ds1_self_test (build time: %s %s)\n", __TIME__, __DATE__);
     printf("================================================================================\n");
     printf("\n");
 
-    // initVariant();
-    // setup();
-    for (unsigned int i = 0; ; i++)
-	{
-        // loop();
-        task_sleepms(1000);
-    }
+    lis9ds1_self_test();
 }
 

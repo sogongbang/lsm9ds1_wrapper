@@ -60,18 +60,28 @@
  */
 
 #if defined(UBINOS_BSP_PRESENT)
-#include <ubinos/bsp/arch.h>
-#endif /* defined(UBINOS_BSP_PRESENT) */
 
-#if defined(UBINOS_BSP_PRESENT)
+#include "main.h"
+#include <ubinos.h>
+
+#if (UBINOS__BSP__BOARD_MODEL == UBINOS__BSP__BOARD_MODEL__NUCLEOF207ZG)
+
+#include <string.h>
+#include <stdio.h>
+#include "lsm9ds1_reg.h"
+
+#define SENSOR_BUS I2CxHandle
 
 typedef struct {
-  void * ptr;
-} dummy_i2c_t;
+  void   *hbus;
+  uint8_t i2c_address;
+  GPIO_TypeDef *cs_port;
+  uint16_t cs_pin;
+} sensbus_t;
 
-dummy_i2c_t dummy_i2c;
-
-#define SENSOR_BUS dummy_i2c
+#else /* (UBINOS__BSP__BOARD_MODEL == ...) */
+#error "Unsupported UBINOS__BSP__BOARD_MODEL"
+#endif /* (UBINOS__BSP__BOARD_MODEL == UBINOS__BSP__BOARD_MODEL__NUCLEOF207ZG) */
 
 #else /* defined(UBINOS_BSP_PRESENT) */
 
@@ -91,16 +101,10 @@ dummy_i2c_t dummy_i2c;
 
 #endif
 
-#endif /* defined(UBINOS_BSP_PRESENT) */
-
 /* Includes ------------------------------------------------------------------*/
 #include <string.h>
 #include <stdio.h>
 #include "lsm9ds1_reg.h"
-
-#if defined(UBINOS_BSP_PRESENT)
-
-#else /* defined(UBINOS_BSP_PRESENT) */
 
 #if defined(NUCLEO_F411RE)
 #include "stm32f4xx_hal.h"
@@ -119,18 +123,15 @@ dummy_i2c_t dummy_i2c;
 #include "components.h"
 #endif
 
-#endif /* defined(UBINOS_BSP_PRESENT) */
-
 typedef struct {
   void   *hbus;
   uint8_t i2c_address;
-#if defined(UBINOS_BSP_PRESENT)
-  void *cs_port;
-#else /* defined(UBINOS_BSP_PRESENT) */
   GPIO_TypeDef *cs_port;
-#endif /* defined(UBINOS_BSP_PRESENT) */
   uint16_t cs_pin;
 } sensbus_t;
+
+#endif /* defined(UBINOS_BSP_PRESENT) */
+
 
 /* Private macro -------------------------------------------------------------*/
 
@@ -159,7 +160,7 @@ static const float min_st_gy_limit[] = {200000.0f, 200000.0f, 200000.0f};
 static const float max_st_gy_limit[] = {800000.0f, 800000.0f, 800000.0f};
 
 /* Private variables ---------------------------------------------------------*/
-#if defined(UBINOS_BSP_PRESENT) /* defined(UBINOS_BSP_PRESENT) */
+#if defined(UBINOS_BSP_PRESENT)
 
 static sensbus_t mag_bus = {&SENSOR_BUS,
                             LSM9DS1_MAG_I2C_ADD_H,
@@ -578,7 +579,12 @@ static int32_t platform_write_imu(void *handle, uint8_t reg,
 {
   sensbus_t *sensbus = (sensbus_t *)handle;
 #if defined(UBINOS_BSP_PRESENT)
-  (void) sensbus;
+#if (UBINOS__BSP__BOARD_MODEL == UBINOS__BSP__BOARD_MODEL__NUCLEOF207ZG)
+  HAL_I2C_Mem_Write(sensbus->hbus, sensbus->i2c_address, reg,
+                  I2C_MEMADD_SIZE_8BIT, (uint8_t*) bufp, len, 1000);
+#else /* (UBINOS__BSP__BOARD_MODEL == ...) */
+#error "Unsupported UBINOS__BSP__BOARD_MODEL"
+#endif /* (UBINOS__BSP__BOARD_MODEL == UBINOS__BSP__BOARD_MODEL__NUCLEOF207ZG) */
 #else /* defined(UBINOS_BSP_PRESENT) */
 #if defined(NUCLEO_F411RE)
   HAL_I2C_Mem_Write(sensbus->hbus, sensbus->i2c_address, reg,
@@ -611,7 +617,14 @@ static int32_t platform_write_mag(void *handle, uint8_t reg,
 {
   sensbus_t *sensbus = (sensbus_t *)handle;
 #if defined(UBINOS_BSP_PRESENT)
-  (void) sensbus;
+#if (UBINOS__BSP__BOARD_MODEL == UBINOS__BSP__BOARD_MODEL__NUCLEOF207ZG)
+  /* Write multiple command */
+  reg |= 0x80;
+  HAL_I2C_Mem_Write(sensbus->hbus, sensbus->i2c_address, reg,
+                    I2C_MEMADD_SIZE_8BIT, (uint8_t*) bufp, len, 1000);
+#else /* (UBINOS__BSP__BOARD_MODEL == ...) */
+#error "Unsupported UBINOS__BSP__BOARD_MODEL"
+#endif /* (UBINOS__BSP__BOARD_MODEL == UBINOS__BSP__BOARD_MODEL__NUCLEOF207ZG) */
 #else /* defined(UBINOS_BSP_PRESENT) */
 #if defined(NUCLEO_F411RE)
   /* Write multiple command */
@@ -651,7 +664,12 @@ static int32_t platform_read_imu(void *handle, uint8_t reg,
 {
   sensbus_t *sensbus = (sensbus_t *)handle;
 #if defined(UBINOS_BSP_PRESENT)
-  (void) sensbus;
+#if (UBINOS__BSP__BOARD_MODEL == UBINOS__BSP__BOARD_MODEL__NUCLEOF207ZG)
+  HAL_I2C_Mem_Read(sensbus->hbus, sensbus->i2c_address, reg,
+                   I2C_MEMADD_SIZE_8BIT, bufp, len, 1000);
+#else /* (UBINOS__BSP__BOARD_MODEL == ...) */
+#error "Unsupported UBINOS__BSP__BOARD_MODEL"
+#endif /* (UBINOS__BSP__BOARD_MODEL == UBINOS__BSP__BOARD_MODEL__NUCLEOF207ZG) */
 #else /* defined(UBINOS_BSP_PRESENT) */
 #if defined(NUCLEO_F411RE)
   HAL_I2C_Mem_Read(sensbus->hbus, sensbus->i2c_address, reg,
@@ -687,7 +705,14 @@ static int32_t platform_read_mag(void *handle, uint8_t reg,
 {
   sensbus_t *sensbus = (sensbus_t *)handle;
 #if defined(UBINOS_BSP_PRESENT)
-  (void) sensbus;
+#if (UBINOS__BSP__BOARD_MODEL == UBINOS__BSP__BOARD_MODEL__NUCLEOF207ZG)
+  /* Read multiple command */
+  reg |= 0x80;
+  HAL_I2C_Mem_Read(sensbus->hbus, sensbus->i2c_address, reg,
+                   I2C_MEMADD_SIZE_8BIT, bufp, len, 1000);
+#else /* (UBINOS__BSP__BOARD_MODEL == ...) */
+#error "Unsupported UBINOS__BSP__BOARD_MODEL"
+#endif /* (UBINOS__BSP__BOARD_MODEL == UBINOS__BSP__BOARD_MODEL__NUCLEOF207ZG) */
 #else /* defined(UBINOS_BSP_PRESENT) */
 #if defined(NUCLEO_F411RE)
   /* Read multiple command */
@@ -721,6 +746,11 @@ static int32_t platform_read_mag(void *handle, uint8_t reg,
 static void tx_com(uint8_t *tx_buffer, uint16_t len)
 {
 #if defined(UBINOS_BSP_PRESENT)
+#if (UBINOS__BSP__BOARD_MODEL == UBINOS__BSP__BOARD_MODEL__NUCLEOF207ZG)
+  dtty_putn((char *) tx_buffer, len);
+#else /* (UBINOS__BSP__BOARD_MODEL == ...) */
+#error "Unsupported UBINOS__BSP__BOARD_MODEL"
+#endif /* (UBINOS__BSP__BOARD_MODEL == UBINOS__BSP__BOARD_MODEL__NUCLEOF207ZG) */
 #else /* defined(UBINOS_BSP_PRESENT) */
 #if defined(NUCLEO_F411RE)
   HAL_UART_Transmit(&huart2, tx_buffer, len, 1000);
@@ -741,6 +771,11 @@ static void tx_com(uint8_t *tx_buffer, uint16_t len)
 static void platform_delay(uint32_t ms)
 {
 #if defined(UBINOS_BSP_PRESENT)
+#if (UBINOS__BSP__BOARD_MODEL == UBINOS__BSP__BOARD_MODEL__NUCLEOF207ZG)
+  task_sleepms(ms);
+#else /* (UBINOS__BSP__BOARD_MODEL == ...) */
+#error "Unsupported UBINOS__BSP__BOARD_MODEL"
+#endif /* (UBINOS__BSP__BOARD_MODEL == UBINOS__BSP__BOARD_MODEL__NUCLEOF207ZG) */
 #else /* defined(UBINOS_BSP_PRESENT) */
 #if defined(NUCLEO_F411RE) | defined(STEVAL_MKI109V3)
   HAL_Delay(ms);
@@ -756,6 +791,24 @@ static void platform_delay(uint32_t ms)
 static void platform_init(void)
 {
 #if defined(UBINOS_BSP_PRESENT)
+#if (UBINOS__BSP__BOARD_MODEL == UBINOS__BSP__BOARD_MODEL__NUCLEOF207ZG)
+  HAL_StatusTypeDef stm_err;
+  
+  I2CxHandle.Instance             = I2Cx;
+  I2CxHandle.Init.AddressingMode  = I2C_ADDRESSINGMODE_7BIT;
+  I2CxHandle.Init.ClockSpeed      = I2Cx_CLOCK;
+  I2CxHandle.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+  I2CxHandle.Init.DutyCycle       = I2C_DUTYCYCLE_16_9;
+  I2CxHandle.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+  I2CxHandle.Init.NoStretchMode   = I2C_NOSTRETCH_DISABLE;
+  I2CxHandle.Init.OwnAddress1     = I2Cx_ADDRESS;
+  I2CxHandle.Init.OwnAddress2     = 0;
+
+  stm_err = HAL_I2C_Init(&I2CxHandle);
+  ubi_assert(stm_err == HAL_OK);
+#else /* (UBINOS__BSP__BOARD_MODEL == ...) */
+#error "Unsupported UBINOS__BSP__BOARD_MODEL"
+#endif /* (UBINOS__BSP__BOARD_MODEL == UBINOS__BSP__BOARD_MODEL__NUCLEOF207ZG) */
 #else /* defined(UBINOS_BSP_PRESENT) */
 #if defined(STEVAL_MKI109V3)
   TIM3->CCR1 = PWM_3V3;
