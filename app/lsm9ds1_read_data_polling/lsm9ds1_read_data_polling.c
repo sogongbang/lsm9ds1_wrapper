@@ -58,79 +58,26 @@
  *            to big endian please see "Endianness definitions" in the
  *            header file of the driver (_reg.h).
  */
+#if defined(UBINOS_BSP_PRESENT)
 
-#if defined(STEVAL_MKI109V3)
-/* MKI109V3: Define communication interface */
-#define SENSOR_BUS hspi2
-/* MKI109V3: Vdd and Vddio power supply values */
-#define PWM_3V3 915
+#include "main.h"
+#include <ubinos.h>
 
-#elif defined(NUCLEO_F411RE)
-/* NUCLEO_F411RE: Define communication interface */
-#define SENSOR_BUS hi2c1
+#if (UBINOS__BSP__BOARD_MODEL == UBINOS__BSP__BOARD_MODEL__NUCLEOF207ZG)
+#else /* (UBINOS__BSP__BOARD_MODEL == ...) */
+#error "Unsupported UBINOS__BSP__BOARD_MODEL"
+#endif /* (UBINOS__BSP__BOARD_MODEL == UBINOS__BSP__BOARD_MODEL__NUCLEOF207ZG) */
 
-#elif defined(SPC584B_DIS)
-/* DISCOVERY_SPC584B: Define communication interface */
-#define SENSOR_BUS I2CD1
+#endif /* defined(UBINOS_BSP_PRESENT) */
 
-#endif
-
-/* Includes ------------------------------------------------------------------*/
 #include <string.h>
 #include <stdio.h>
 #include "lsm9ds1_reg.h"
-
-#if defined(NUCLEO_F411RE)
-#include "stm32f4xx_hal.h"
-#include "usart.h"
-#include "gpio.h"
-#include "i2c.h"
-
-#elif defined(STEVAL_MKI109V3)
-#include "stm32f4xx_hal.h"
-#include "usbd_cdc_if.h"
-#include "gpio.h"
-#include "spi.h"
-#include "tim.h"
-
-#elif defined(SPC584B_DIS)
-#include "components.h"
-#endif
-
-typedef struct {
-  void   *hbus;
-  uint8_t i2c_address;
-  GPIO_TypeDef *cs_port;
-  uint16_t cs_pin;
-} sensbus_t;
 
 /* Private macro -------------------------------------------------------------*/
 #define    BOOT_TIME            20 //ms
 
 /* Private variables ---------------------------------------------------------*/
-#if defined(STEVAL_MKI109V3)
-static sensbus_t imu_bus = {&SENSOR_BUS,
-                            0,
-                            CS_up_GPIO_Port,
-                            CS_up_Pin
-                           };
-static sensbus_t mag_bus = {&SENSOR_BUS,
-                            0,
-                            CS_A_up_GPIO_Port,
-                            CS_A_up_Pin
-                           };
-#elif defined(SPC584B_DIS) | defined(NUCLEO_F411RE)
-static sensbus_t mag_bus = {&SENSOR_BUS,
-                            LSM9DS1_MAG_I2C_ADD_H,
-                            0,
-                            0
-                           };
-static sensbus_t imu_bus = {&SENSOR_BUS,
-                            LSM9DS1_IMU_I2C_ADD_H,
-                            0,
-                            0
-                           };
-#endif
 
 static int16_t data_raw_acceleration[3];
 static int16_t data_raw_angular_rate[3];
@@ -146,23 +93,6 @@ static uint8_t tx_buffer[1000];
 /* Extern variables ----------------------------------------------------------*/
 
 /* Private functions ---------------------------------------------------------*/
-/*
- *   WARNING:
- *   Functions declare in this section are defined at the end of this file
- *   and are strictly related to the hardware platform used.
- *
- */
-static int32_t platform_write_imu(void *handle, uint8_t reg,
-                                  const uint8_t *bufp, uint16_t len);
-static int32_t platform_read_imu(void *handle, uint8_t reg,
-                                 uint8_t *bufp, uint16_t len);
-static int32_t platform_write_mag(void *handle, uint8_t reg,
-                                  const uint8_t *bufp, uint16_t len);
-static int32_t platform_read_mag(void *handle, uint8_t reg,
-                                 uint8_t *bufp, uint16_t len);
-static void tx_com( uint8_t *tx_buffer, uint16_t len );
-static void platform_delay(uint32_t ms);
-static void platform_init(void);
 
 /* Main Example --------------------------------------------------------------*/
 void lsm9ds1_read_data_polling(void)
@@ -267,182 +197,7 @@ void lsm9ds1_read_data_polling(void)
               magnetic_field_mgauss[2]);
       tx_com(tx_buffer, strlen((char const *)tx_buffer));
     }
+
+    platform_delay(500);
   }
-}
-
-/*
- * @brief  Write generic imu register (platform dependent)
- *
- * @param  handle    customizable argument. In this examples is used in
- *                   order to select the correct sensor bus handler.
- * @param  reg       register to write
- * @param  bufp      pointer to data to write in register reg
- * @param  len       number of consecutive register to write
- *
- */
-static int32_t platform_write_imu(void *handle, uint8_t reg,
-                                  const uint8_t *bufp, uint16_t len)
-{
-  sensbus_t *sensbus = (sensbus_t *)handle;
-#if defined(NUCLEO_F411RE)
-  HAL_I2C_Mem_Write(sensbus->hbus, sensbus->i2c_address, reg,
-                    I2C_MEMADD_SIZE_8BIT, (uint8_t*) bufp, len, 1000);
-#elif defined(STEVAL_MKI109V3)
-  HAL_GPIO_WritePin(sensbus->cs_port, sensbus->cs_pin, GPIO_PIN_RESET);
-  HAL_SPI_Transmit(sensbus->hbus, &reg, 1, 1000);
-  HAL_SPI_Transmit(sensbus->hbus, (uint8_t*) bufp, len, 1000);
-  HAL_GPIO_WritePin(sensbus->cs_port, sensbus->cs_pin, GPIO_PIN_SET);
-#elif defined(SPC584B_DIS)
-  i2c_lld_write(sensbus->hbus,  sensbus->i2c_address & 0xFE, reg,
-                (uint8_t*) bufp, len);
-#endif
-  return 0;
-}
-
-/*
- * @brief  Write generic magnetometer register (platform dependent)
- *
- * @param  handle    customizable argument. In this examples is used in
- *                   order to select the correct sensor bus handler.
- * @param  reg       register to write
- * @param  bufp      pointer to data to write in register reg
- * @param  len       number of consecutive register to write
- *
- */
-static int32_t platform_write_mag(void *handle, uint8_t reg,
-                                  const uint8_t *bufp, uint16_t len)
-{
-  sensbus_t *sensbus = (sensbus_t *)handle;
-#if defined(NUCLEO_F411RE)
-  /* Write multiple command */
-  reg |= 0x80;
-  HAL_I2C_Mem_Write(sensbus->hbus, sensbus->i2c_address, reg,
-                    I2C_MEMADD_SIZE_8BIT, (uint8_t*) bufp, len, 1000);
-#elif defined(STEVAL_MKI109V3)
-  /* Write multiple command */
-  reg |= 0x40;
-  HAL_GPIO_WritePin(sensbus->cs_port, sensbus->cs_pin, GPIO_PIN_RESET);
-  HAL_SPI_Transmit(sensbus->hbus, &reg, 1, 1000);
-  HAL_SPI_Transmit(sensbus->hbus, (uint8_t*) bufp, len, 1000);
-  HAL_GPIO_WritePin(sensbus->cs_port, sensbus->cs_pin, GPIO_PIN_SET);
-#elif defined(SPC584B_DIS)
-  /* Write multiple command */
-  reg |= 0x80;
-  i2c_lld_write(sensbus->hbus, sensbus->i2c_address & 0xFE, reg,
-                (uint8_t*) bufp, len);
-#endif
-  return 0;
-}
-
-/*
- * @brief  Read generic imu register (platform dependent)
- *
- * @param  handle    customizable argument. In this examples is used in
- *                   order to select the correct sensor bus handler.
- * @param  reg       register to read
- * @param  bufp      pointer to buffer that store the data read
- * @param  len       number of consecutive register to read
- *
- */
-static int32_t platform_read_imu(void *handle, uint8_t reg,
-                                 uint8_t *bufp, uint16_t len)
-{
-  sensbus_t *sensbus = (sensbus_t *)handle;
-#if defined(NUCLEO_F411RE)
-  HAL_I2C_Mem_Read(sensbus->hbus, sensbus->i2c_address, reg,
-                   I2C_MEMADD_SIZE_8BIT, bufp, len, 1000);
-#elif defined(STEVAL_MKI109V3)
-  /* Read command */
-  reg |= 0x80;
-  HAL_GPIO_WritePin(sensbus->cs_port, sensbus->cs_pin, GPIO_PIN_RESET);
-  HAL_SPI_Transmit(sensbus->hbus, &reg, 1, 1000);
-  HAL_SPI_Receive(sensbus->hbus, bufp, len, 1000);
-  HAL_GPIO_WritePin(sensbus->cs_port, sensbus->cs_pin, GPIO_PIN_SET);
-#elif defined(SPC584B_DIS)
-  i2c_lld_read(sensbus->hbus, sensbus->i2c_address & 0xFE, reg, bufp,
-               len);
-#endif
-  return 0;
-}
-
-/*
- * @brief  Read generic magnetometer register (platform dependent)
- *
- * @param  handle    customizable argument. In this examples is used in
- *                   order to select the correct sensor bus handler.
- * @param  reg       register to read
- * @param  bufp      pointer to buffer that store the data read
- * @param  len       number of consecutive register to read
- *
- */
-static int32_t platform_read_mag(void *handle, uint8_t reg,
-                                 uint8_t *bufp, uint16_t len)
-{
-  sensbus_t *sensbus = (sensbus_t *)handle;
-#if defined(NUCLEO_F411RE)
-  /* Read multiple command */
-  reg |= 0x80;
-  HAL_I2C_Mem_Read(sensbus->hbus, sensbus->i2c_address, reg,
-                   I2C_MEMADD_SIZE_8BIT, bufp, len, 1000);
-#elif defined(STEVAL_MKI109V3)
-  /* Read multiple command */
-  reg |= 0xC0;
-  HAL_GPIO_WritePin(sensbus->cs_port, sensbus->cs_pin, GPIO_PIN_RESET);
-  HAL_SPI_Transmit(sensbus->hbus, &reg, 1, 1000);
-  HAL_SPI_Receive(sensbus->hbus, bufp, len, 1000);
-  HAL_GPIO_WritePin(sensbus->cs_port, sensbus->cs_pin, GPIO_PIN_SET);
-#elif defined(SPC584B_DIS)
-  /* Read multiple command */
-  reg |= 0x80;
-  i2c_lld_read(sensbus->hbus, sensbus->i2c_address & 0xFE, reg, bufp,
-               len);
-#endif
-  return 0;
-}
-
-/*
- * @brief  Send buffer to console (platform dependent)
- *
- * @param  tx_buffer     buffer to transmit
- * @param  len           number of byte to send
- *
- */
-static void tx_com(uint8_t *tx_buffer, uint16_t len)
-{
-#if defined(NUCLEO_F411RE)
-  HAL_UART_Transmit(&huart2, tx_buffer, len, 1000);
-#elif defined(STEVAL_MKI109V3)
-  CDC_Transmit_FS(tx_buffer, len);
-#elif defined(SPC584B_DIS)
-  sd_lld_write(&SD2, tx_buffer, len);
-#endif
-}
-
-/*
- * @brief  platform specific delay (platform dependent)
- *
- * @param  ms        delay in ms
- *
- */
-static void platform_delay(uint32_t ms)
-{
-#if defined(NUCLEO_F411RE) | defined(STEVAL_MKI109V3)
-  HAL_Delay(ms);
-#elif defined(SPC584B_DIS)
-  osalThreadDelayMilliseconds(ms);
-#endif
-}
-
-/*
- * @brief  platform specific initialization (platform dependent)
- */
-static void platform_init(void)
-{
-#if defined(STEVAL_MKI109V3)
-  TIM3->CCR1 = PWM_3V3;
-  TIM3->CCR2 = PWM_3V3;
-  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
-  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2);
-  HAL_Delay(1000);
-#endif
 }
