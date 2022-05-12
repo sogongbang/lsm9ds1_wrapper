@@ -58,20 +58,12 @@
  *            to big endian please see "Endianness definitions" in the
  *            header file of the driver (_reg.h).
  */
-#if defined(UBINOS_BSP_PRESENT)
-
-#include "main.h"
 #include <ubinos.h>
-
-#if (UBINOS__BSP__BOARD_MODEL == UBINOS__BSP__BOARD_MODEL__NUCLEOF207ZG)
-#else /* (UBINOS__BSP__BOARD_MODEL == ...) */
-#error "Unsupported UBINOS__BSP__BOARD_MODEL"
-#endif /* (UBINOS__BSP__BOARD_MODEL == UBINOS__BSP__BOARD_MODEL__NUCLEOF207ZG) */
-
-#endif /* defined(UBINOS_BSP_PRESENT) */
 
 #include <string.h>
 #include <stdio.h>
+
+#include "main.h"
 #include "lsm9ds1_reg.h"
 
 /* Private macro -------------------------------------------------------------*/
