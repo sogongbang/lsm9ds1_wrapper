@@ -25,6 +25,8 @@
 #include "stm32f2xx_hal.h"
 #include "stm32f2xx_nucleo_144.h"
 
+#include "lsm9ds1_platform.h"
+
 /* Exported types ------------------------------------------------------------*/
 /* Exported constants --------------------------------------------------------*/
 /* User can use this section to tailor I2Cx/I2Cx instance used and associated
@@ -61,6 +63,7 @@ extern I2C_HandleTypeDef I2CxHandle;
 
 /* */
 void lis9ds1_self_test(void);
+
 
 #endif /* __MAIN_H */
 
