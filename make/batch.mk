@@ -31,9 +31,16 @@
 	make -f makefile.mk $@ CONFIG_NAME=lsm9ds1_self_test_nucleof207zg
 	@echo ""
 	@echo ""
+	@echo "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@"
 	@echo ""
 	@echo ""
 	make -f makefile.mk $@ CONFIG_NAME=lsm9ds1_self_test_nrf52840dk
+	@echo ""
+	@echo ""
+	@echo "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@"
+	@echo ""
+	@echo ""
+	make -f makefile.mk $@ CONFIG_NAME=lsm9ds1_self_test_adafruitnrf52840e_rtctick
 	@echo ""
 	@echo ""
 
@@ -44,9 +51,16 @@
 	make -f makefile.mk $@ CONFIG_NAME=lsm9ds1_read_data_polling_nucleof207zg
 	@echo ""
 	@echo ""
+	@echo "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@"
 	@echo ""
 	@echo ""
 	make -f makefile.mk $@ CONFIG_NAME=lsm9ds1_read_data_polling_nrf52840dk
+	@echo ""
+	@echo ""
+	@echo "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@"
+	@echo ""
+	@echo ""
+	make -f makefile.mk $@ CONFIG_NAME=lsm9ds1_read_data_polling_adafruitnrf52840e_rtctick
 	@echo ""
 	@echo ""
 
