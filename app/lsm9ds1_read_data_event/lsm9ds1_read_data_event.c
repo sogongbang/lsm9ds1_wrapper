@@ -81,7 +81,7 @@ static float magnetic_field_mgauss[3];
 static lsm9ds1_id_t whoamI;
 static lsm9ds1_status_t reg;
 static uint8_t rst;
-static uint8_t tx_buffer[2000];
+static uint8_t tx_buffer[1000];
 
 /* Extern variables ----------------------------------------------------------*/
 
