@@ -11,6 +11,7 @@
 
 #include "boards.h"
 #include "nrf_drv_twi.h"
+#include "nrf_drv_gpiote.h"
 
 /* TWI instance ID. */
 #if TWI0_ENABLED
@@ -184,6 +185,23 @@ void platform_delay(uint32_t ms)
   }
 }
 
+
+int start_pin_value = 0;
+
+#define start_pin_no NRF_GPIO_PIN_MAP(1,  8)
+
+static void start_pin_handler(nrf_drv_gpiote_pin_t pin, nrf_gpiote_polarity_t action)
+{
+    if (nrf_drv_gpiote_in_is_set(start_pin_no) == 0)
+    {
+      start_pin_value = 1;
+    }
+    else
+    {
+      start_pin_value = 0;
+    }
+}
+
 /*
  * @brief  platform specific initialization (platform dependent)
  */
@@ -210,6 +228,19 @@ void platform_init(void)
 
         break;
     } while (1);
+
+    ////
+    nrf_err = nrf_drv_gpiote_init();
+    APP_ERROR_CHECK(nrf_err);
+
+    nrf_drv_gpiote_in_config_t in_config = GPIOTE_CONFIG_IN_SENSE_TOGGLE(true);
+    in_config.pull = NRF_GPIO_PIN_PULLUP;
+
+    nrf_err = nrf_drv_gpiote_in_init(start_pin_no, &in_config, start_pin_handler);
+    APP_ERROR_CHECK(nrf_err);
+
+    nrf_drv_gpiote_in_event_enable(start_pin_no, true);
+
 }
 
 #endif /* (UBINOS__BSP__BOARD_VARIATION__ADAFRUITNRF52840E == 1) */

@@ -37,6 +37,19 @@ static void root_func(void * arg)
     printf("================================================================================\n");
     printf("\n");
 
-    lsm9ds1_read_data_event();
+    lsm9ds1_read_data_event_setup();
+
+    for (unsigned int i = 0; ; i++)
+    {
+        if (start_pin_value)
+        {
+            lsm9ds1_read_data_event_loop();
+            task_sleepms(100);
+        }
+        else
+        {
+            task_sleepms(500);
+        }
+    }
 }
 

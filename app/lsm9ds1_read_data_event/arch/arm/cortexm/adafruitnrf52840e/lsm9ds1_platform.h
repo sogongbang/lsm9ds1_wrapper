@@ -22,6 +22,10 @@ typedef struct {
 extern sensbus_t mag_bus;
 extern sensbus_t imu_bus;
 
+#include <ubinos.h>
+
+extern int start_pin_value;
+
 /*
  *   WARNING:
  *   Functions declare in this section are defined at the end of this file

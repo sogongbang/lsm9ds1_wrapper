@@ -82,16 +82,16 @@ static lsm9ds1_id_t whoamI;
 static lsm9ds1_status_t reg;
 static uint8_t rst;
 static uint8_t tx_buffer[1000];
+static stmdev_ctx_t dev_ctx_imu;
+static stmdev_ctx_t dev_ctx_mag;
 
 /* Extern variables ----------------------------------------------------------*/
 
 /* Private functions ---------------------------------------------------------*/
 
 /* Main Example --------------------------------------------------------------*/
-void lsm9ds1_read_data_event(void)
+void lsm9ds1_read_data_event_setup(void)
 {
-  stmdev_ctx_t dev_ctx_imu;
-  stmdev_ctx_t dev_ctx_mag;
   /* Initialize inertial sensors (IMU) driver interface */
   dev_ctx_imu.write_reg = platform_write_imu;
   dev_ctx_imu.read_reg = platform_read_imu;
@@ -142,69 +142,67 @@ void lsm9ds1_read_data_event(void)
   /* Set Output Data Rate / Power mode */
   lsm9ds1_imu_data_rate_set(&dev_ctx_imu, LSM9DS1_IMU_59Hz5);
   lsm9ds1_mag_data_rate_set(&dev_ctx_mag, LSM9DS1_MAG_UHP_10Hz);
+}
 
-  /* Read samples in polling mode (no int) */
-  while (1) {
-    memset(acceleration_mg, 0, sizeof(acceleration_mg));
-    memset(angular_rate_mdps, 0, sizeof(angular_rate_mdps));
-    memset(magnetic_field_mgauss, 0, sizeof(magnetic_field_mgauss));
+void lsm9ds1_read_data_event_loop(void)
+{
+  memset(acceleration_mg, 0, sizeof(acceleration_mg));
+  memset(angular_rate_mdps, 0, sizeof(angular_rate_mdps));
+  memset(magnetic_field_mgauss, 0, sizeof(magnetic_field_mgauss));
 
-    /* Read device status register */
-    lsm9ds1_dev_status_get(&dev_ctx_mag, &dev_ctx_imu, &reg);
+  /* Read device status register */
+  lsm9ds1_dev_status_get(&dev_ctx_mag, &dev_ctx_imu, &reg);
 
-    if ( reg.status_imu.xlda && reg.status_imu.gda ) {
-      /* Read imu data */
-      memset(data_raw_acceleration, 0x00, 3 * sizeof(int16_t));
-      memset(data_raw_angular_rate, 0x00, 3 * sizeof(int16_t));
-      lsm9ds1_acceleration_raw_get(&dev_ctx_imu,
-                                   data_raw_acceleration);
-      lsm9ds1_angular_rate_raw_get(&dev_ctx_imu,
-                                   data_raw_angular_rate);
-      acceleration_mg[0] = lsm9ds1_from_fs4g_to_mg(
-                             data_raw_acceleration[0]);
-      acceleration_mg[1] = lsm9ds1_from_fs4g_to_mg(
-                             data_raw_acceleration[1]);
-      acceleration_mg[2] = lsm9ds1_from_fs4g_to_mg(
-                             data_raw_acceleration[2]);
-      angular_rate_mdps[0] = lsm9ds1_from_fs2000dps_to_mdps(
-                               data_raw_angular_rate[0]);
-      angular_rate_mdps[1] = lsm9ds1_from_fs2000dps_to_mdps(
-                               data_raw_angular_rate[1]);
-      angular_rate_mdps[2] = lsm9ds1_from_fs2000dps_to_mdps(
-                               data_raw_angular_rate[2]);
-      // sprintf((char *)tx_buffer,
-      //         "IMU - [mg]:%4.2f\t%4.2f\t%4.2f\t[mdps]:%4.2f\t%4.2f\t%4.2f\r\n",
-      //         acceleration_mg[0], acceleration_mg[1], acceleration_mg[2],
-      //         angular_rate_mdps[0], angular_rate_mdps[1], angular_rate_mdps[2]);
-      // tx_com(tx_buffer, strlen((char const *)tx_buffer));
-    }
-
-    if ( reg.status_mag.zyxda ) {
-      /* Read magnetometer data */
-      memset(data_raw_magnetic_field, 0x00, 3 * sizeof(int16_t));
-      lsm9ds1_magnetic_raw_get(&dev_ctx_mag, data_raw_magnetic_field);
-      magnetic_field_mgauss[0] = lsm9ds1_from_fs16gauss_to_mG(
-                                   data_raw_magnetic_field[0]);
-      magnetic_field_mgauss[1] = lsm9ds1_from_fs16gauss_to_mG(
-                                   data_raw_magnetic_field[1]);
-      magnetic_field_mgauss[2] = lsm9ds1_from_fs16gauss_to_mG(
-                                   data_raw_magnetic_field[2]);
-      // sprintf((char *)tx_buffer, "MAG - [mG]:%4.2f\t%4.2f\t%4.2f\r\n",
-      //         magnetic_field_mgauss[0], magnetic_field_mgauss[1],
-      //         magnetic_field_mgauss[2]);
-      // tx_com(tx_buffer, strlen((char const *)tx_buffer));
-    }
-
+  if ( reg.status_imu.xlda && reg.status_imu.gda ) {
+    /* Read imu data */
+    memset(data_raw_acceleration, 0x00, 3 * sizeof(int16_t));
+    memset(data_raw_angular_rate, 0x00, 3 * sizeof(int16_t));
+    lsm9ds1_acceleration_raw_get(&dev_ctx_imu,
+                                  data_raw_acceleration);
+    lsm9ds1_angular_rate_raw_get(&dev_ctx_imu,
+                                  data_raw_angular_rate);
+    acceleration_mg[0] = lsm9ds1_from_fs4g_to_mg(
+                            data_raw_acceleration[0]);
+    acceleration_mg[1] = lsm9ds1_from_fs4g_to_mg(
+                            data_raw_acceleration[1]);
+    acceleration_mg[2] = lsm9ds1_from_fs4g_to_mg(
+                            data_raw_acceleration[2]);
+    angular_rate_mdps[0] = lsm9ds1_from_fs2000dps_to_mdps(
+                              data_raw_angular_rate[0]);
+    angular_rate_mdps[1] = lsm9ds1_from_fs2000dps_to_mdps(
+                              data_raw_angular_rate[1]);
+    angular_rate_mdps[2] = lsm9ds1_from_fs2000dps_to_mdps(
+                              data_raw_angular_rate[2]);
     // sprintf((char *)tx_buffer,
-    //   "3D-ACC[mg], 3D-ANG[mdps], 3D-MAG[mG]: ");
+    //         "IMU - [mg]:%4.2f\t%4.2f\t%4.2f\t[mdps]:%4.2f\t%4.2f\t%4.2f\r\n",
+    //         acceleration_mg[0], acceleration_mg[1], acceleration_mg[2],
+    //         angular_rate_mdps[0], angular_rate_mdps[1], angular_rate_mdps[2]);
     // tx_com(tx_buffer, strlen((char const *)tx_buffer));
-    sprintf((char *)tx_buffer,
-      "%12.2f, %12.2f, %12.2f,    %12.2f, %12.2f, %12.2f,    %12.2f, %12.2f, %12.2f\n",
-      acceleration_mg[0], acceleration_mg[1], acceleration_mg[2],
-      angular_rate_mdps[0], angular_rate_mdps[1], angular_rate_mdps[2],
-      magnetic_field_mgauss[0], magnetic_field_mgauss[1], magnetic_field_mgauss[2]);
-    tx_com(tx_buffer, strlen((char const *)tx_buffer));
-
-    platform_delay(500);
   }
+
+  if ( reg.status_mag.zyxda ) {
+    /* Read magnetometer data */
+    memset(data_raw_magnetic_field, 0x00, 3 * sizeof(int16_t));
+    lsm9ds1_magnetic_raw_get(&dev_ctx_mag, data_raw_magnetic_field);
+    magnetic_field_mgauss[0] = lsm9ds1_from_fs16gauss_to_mG(
+                                  data_raw_magnetic_field[0]);
+    magnetic_field_mgauss[1] = lsm9ds1_from_fs16gauss_to_mG(
+                                  data_raw_magnetic_field[1]);
+    magnetic_field_mgauss[2] = lsm9ds1_from_fs16gauss_to_mG(
+                                  data_raw_magnetic_field[2]);
+    // sprintf((char *)tx_buffer, "MAG - [mG]:%4.2f\t%4.2f\t%4.2f\r\n",
+    //         magnetic_field_mgauss[0], magnetic_field_mgauss[1],
+    //         magnetic_field_mgauss[2]);
+    // tx_com(tx_buffer, strlen((char const *)tx_buffer));
+  }
+
+  // sprintf((char *)tx_buffer,
+  //   "3D-ACC[mg], 3D-ANG[mdps], 3D-MAG[mG]: ");
+  // tx_com(tx_buffer, strlen((char const *)tx_buffer));
+  sprintf((char *)tx_buffer,
+    "%12.2f, %12.2f, %12.2f,    %12.2f, %12.2f, %12.2f,    %12.2f, %12.2f, %12.2f\n",
+    acceleration_mg[0], acceleration_mg[1], acceleration_mg[2],
+    angular_rate_mdps[0], angular_rate_mdps[1], angular_rate_mdps[2],
+    magnetic_field_mgauss[0], magnetic_field_mgauss[1], magnetic_field_mgauss[2]);
+  tx_com(tx_buffer, strlen((char const *)tx_buffer));
 }
