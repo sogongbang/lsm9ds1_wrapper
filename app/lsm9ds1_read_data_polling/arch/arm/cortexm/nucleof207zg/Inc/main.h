@@ -61,10 +61,6 @@
 
 extern I2C_HandleTypeDef I2CxHandle;
 
-/* */
-void lsm9ds1_read_data_polling(void);
-
-
 #endif /* __MAIN_H */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

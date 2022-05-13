@@ -12,6 +12,7 @@
 #include <time.h>
 
 #include "main.h"
+#include "lsm9ds1_read_data_event.h"
 
 static void root_func(void * arg);
 

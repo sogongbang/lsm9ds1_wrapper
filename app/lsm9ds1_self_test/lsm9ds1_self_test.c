@@ -66,7 +66,7 @@
 
 #include "main.h"
 #include "lsm9ds1_reg.h"
-
+#include "lsm9ds1_self_test.h"
 
 /* Private macro -------------------------------------------------------------*/
 
@@ -101,7 +101,7 @@ static const float max_st_gy_limit[] = {800000.0f, 800000.0f, 800000.0f};
 /* Private functions ---------------------------------------------------------*/
 
 /* Main Example --------------------------------------------------------------*/
-void lis9ds1_self_test(void)
+void lsm9ds1_self_test(void)
 {
   stmdev_ctx_t dev_ctx_imu;
   stmdev_ctx_t dev_ctx_mag;

@@ -64,6 +64,7 @@
 #include <stdio.h>
 
 #include "main.h"
+#include "lsm9ds1_read_data_event.h"
 #include "lsm9ds1_reg.h"
 
 /* Private macro -------------------------------------------------------------*/

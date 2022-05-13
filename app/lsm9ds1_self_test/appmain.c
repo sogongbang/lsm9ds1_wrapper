@@ -12,6 +12,7 @@
 #include <time.h>
 
 #include "main.h"
+#include "lsm9ds1_self_test.h"
 
 static void root_func(void * arg);
 
@@ -32,10 +33,10 @@ static void root_func(void * arg)
 {
     printf("\n\n\n");
     printf("================================================================================\n");
-    printf("lis9ds1_self_test (build time: %s %s)\n", __TIME__, __DATE__);
+    printf("lsm9ds1_self_test (build time: %s %s)\n", __TIME__, __DATE__);
     printf("================================================================================\n");
     printf("\n");
 
-    lis9ds1_self_test();
+    lsm9ds1_self_test();
 }
 

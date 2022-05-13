@@ -61,10 +61,6 @@
 
 extern I2C_HandleTypeDef I2CxHandle;
 
-/* */
-void lis9ds1_self_test(void);
-
-
 #endif /* __MAIN_H */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

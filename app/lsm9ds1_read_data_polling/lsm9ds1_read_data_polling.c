@@ -65,6 +65,7 @@
 
 #include "main.h"
 #include "lsm9ds1_reg.h"
+#include "lsm9ds1_read_data_polling.h"
 
 /* Private macro -------------------------------------------------------------*/
 #define    BOOT_TIME            20 //ms
