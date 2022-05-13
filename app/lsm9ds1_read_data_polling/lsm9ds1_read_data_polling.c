@@ -145,6 +145,10 @@ void lsm9ds1_read_data_polling(void)
 
   /* Read samples in polling mode (no int) */
   while (1) {
+    memset(acceleration_mg, 0, sizeof(acceleration_mg));
+    memset(angular_rate_mdps, 0, sizeof(angular_rate_mdps));
+    memset(magnetic_field_mgauss, 0, sizeof(magnetic_field_mgauss));
+
     /* Read device status register */
     lsm9ds1_dev_status_get(&dev_ctx_mag, &dev_ctx_imu, &reg);
 
@@ -168,11 +172,11 @@ void lsm9ds1_read_data_polling(void)
                                data_raw_angular_rate[1]);
       angular_rate_mdps[2] = lsm9ds1_from_fs2000dps_to_mdps(
                                data_raw_angular_rate[2]);
-      sprintf((char *)tx_buffer,
-              "IMU - [mg]:%4.2f\t%4.2f\t%4.2f\t[mdps]:%4.2f\t%4.2f\t%4.2f\r\n",
-              acceleration_mg[0], acceleration_mg[1], acceleration_mg[2],
-              angular_rate_mdps[0], angular_rate_mdps[1], angular_rate_mdps[2]);
-      tx_com(tx_buffer, strlen((char const *)tx_buffer));
+      // sprintf((char *)tx_buffer,
+      //         "IMU - [mg]:%4.2f\t%4.2f\t%4.2f\t[mdps]:%4.2f\t%4.2f\t%4.2f\r\n",
+      //         acceleration_mg[0], acceleration_mg[1], acceleration_mg[2],
+      //         angular_rate_mdps[0], angular_rate_mdps[1], angular_rate_mdps[2]);
+      // tx_com(tx_buffer, strlen((char const *)tx_buffer));
     }
 
     if ( reg.status_mag.zyxda ) {
@@ -185,11 +189,21 @@ void lsm9ds1_read_data_polling(void)
                                    data_raw_magnetic_field[1]);
       magnetic_field_mgauss[2] = lsm9ds1_from_fs16gauss_to_mG(
                                    data_raw_magnetic_field[2]);
-      sprintf((char *)tx_buffer, "MAG - [mG]:%4.2f\t%4.2f\t%4.2f\r\n",
-              magnetic_field_mgauss[0], magnetic_field_mgauss[1],
-              magnetic_field_mgauss[2]);
-      tx_com(tx_buffer, strlen((char const *)tx_buffer));
+      // sprintf((char *)tx_buffer, "MAG - [mG]:%4.2f\t%4.2f\t%4.2f\r\n",
+      //         magnetic_field_mgauss[0], magnetic_field_mgauss[1],
+      //         magnetic_field_mgauss[2]);
+      // tx_com(tx_buffer, strlen((char const *)tx_buffer));
     }
+
+    // sprintf((char *)tx_buffer,
+    //   "3D-ACC[mg], 3D-ANG[mdps], 3D-MAG[mG]: ");
+    // tx_com(tx_buffer, strlen((char const *)tx_buffer));
+    sprintf((char *)tx_buffer,
+      "%12.2f, %12.2f, %12.2f,    %12.2f, %12.2f, %12.2f,    %12.2f, %12.2f, %12.2f\n",
+      acceleration_mg[0], acceleration_mg[1], acceleration_mg[2],
+      angular_rate_mdps[0], angular_rate_mdps[1], angular_rate_mdps[2],
+      magnetic_field_mgauss[0], magnetic_field_mgauss[1], magnetic_field_mgauss[2]);
+    tx_com(tx_buffer, strlen((char const *)tx_buffer));
 
     platform_delay(500);
   }
