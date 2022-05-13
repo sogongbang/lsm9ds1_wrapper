@@ -241,6 +241,7 @@ void platform_init(void)
 
     nrf_drv_gpiote_in_event_enable(start_pin_no, true);
 
+    dtty_setautocr(0);
 }
 
 #endif /* (UBINOS__BSP__BOARD_VARIATION__ADAFRUITNRF52840E == 1) */

@@ -196,13 +196,34 @@ void lsm9ds1_read_data_event_loop(void)
     // tx_com(tx_buffer, strlen((char const *)tx_buffer));
   }
 
+  int data_size = 0;
+  int buf_offset = 0;
+  tx_buffer[0] = 0x76; // start code 1
+  tx_buffer[1] = 0x07; // start code 2
+  tx_buffer[2] = 0x03; // start code 3
+  tx_buffer[3] = 0;    // data size
+  buf_offset = 4;
+  data_size = sizeof(acceleration_mg);
+  memcpy(&tx_buffer[buf_offset], acceleration_mg, data_size);
+  buf_offset += data_size;
+  data_size = sizeof(angular_rate_mdps);
+  memcpy(&tx_buffer[buf_offset], angular_rate_mdps, data_size);
+  buf_offset += data_size;
+  data_size = sizeof(magnetic_field_mgauss);
+  memcpy(&tx_buffer[buf_offset], magnetic_field_mgauss, data_size);
+  buf_offset += data_size;
+  tx_buffer[buf_offset] = '\n';
+  buf_offset += 1;
+  tx_buffer[3] = buf_offset - 4;
+  tx_com(tx_buffer, buf_offset);
+
+  //  // sprintf((char *)tx_buffer,
+  //  //   "3D-ACC[mg], 3D-ANG[mdps], 3D-MAG[mG]: ");
+  //  // tx_com(tx_buffer, strlen((char const *)tx_buffer));
   // sprintf((char *)tx_buffer,
-  //   "3D-ACC[mg], 3D-ANG[mdps], 3D-MAG[mG]: ");
+  //   "%12.2f, %12.2f, %12.2f,    %12.2f, %12.2f, %12.2f,    %12.2f, %12.2f, %12.2f\n",
+  //   acceleration_mg[0], acceleration_mg[1], acceleration_mg[2],
+  //   angular_rate_mdps[0], angular_rate_mdps[1], angular_rate_mdps[2],
+  //   magnetic_field_mgauss[0], magnetic_field_mgauss[1], magnetic_field_mgauss[2]);
   // tx_com(tx_buffer, strlen((char const *)tx_buffer));
-  sprintf((char *)tx_buffer,
-    "%12.2f, %12.2f, %12.2f,    %12.2f, %12.2f, %12.2f,    %12.2f, %12.2f, %12.2f\n",
-    acceleration_mg[0], acceleration_mg[1], acceleration_mg[2],
-    angular_rate_mdps[0], angular_rate_mdps[1], angular_rate_mdps[2],
-    magnetic_field_mgauss[0], magnetic_field_mgauss[1], magnetic_field_mgauss[2]);
-  tx_com(tx_buffer, strlen((char const *)tx_buffer));
 }
