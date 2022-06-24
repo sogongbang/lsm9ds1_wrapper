@@ -103,341 +103,337 @@ static const float max_st_gy_limit[] = {800000.0f, 800000.0f, 800000.0f};
 /* Main Example --------------------------------------------------------------*/
 void lsm9ds1_self_test(void)
 {
-  stmdev_ctx_t dev_ctx_imu;
-  stmdev_ctx_t dev_ctx_mag;
-  uint8_t tx_buffer[1000];
-  int16_t data_raw[3];
-  lsm9ds1_status_t reg;
-  lsm9ds1_id_t whoamI;
-  float val_st_off[3];
-  float val_st_on[3];
-  float test_val[3];
-  uint8_t st_result;
-  uint8_t rst;
-  uint8_t i;
-  uint8_t j;
-  /* Initialize inertial sensors (IMU) driver interface */
-  dev_ctx_imu.write_reg = platform_write_imu;
-  dev_ctx_imu.read_reg = platform_read_imu;
-  dev_ctx_imu.handle = (void *)&imu_bus;
-  /* Initialize magnetic sensors driver interface */
-  dev_ctx_mag.write_reg = platform_write_mag;
-  dev_ctx_mag.read_reg = platform_read_mag;
-  dev_ctx_mag.handle = (void *)&mag_bus;
-  /* Init test platform */
-  platform_init();
-  /* Wait sensor boot time */
-  platform_delay(BOOT_TIME);
-  /* Check device ID */
-  lsm9ds1_dev_id_get(&dev_ctx_mag, &dev_ctx_imu, &whoamI);
+    stmdev_ctx_t dev_ctx_imu;
+    stmdev_ctx_t dev_ctx_mag;
+    uint8_t tx_buffer[1000];
+    int16_t data_raw[3];
+    lsm9ds1_status_t reg;
+    lsm9ds1_id_t whoamI;
+    float val_st_off[3];
+    float val_st_on[3];
+    float test_val[3];
+    uint8_t st_result;
+    uint8_t rst;
+    uint8_t i;
+    uint8_t j;
+    /* Initialize inertial sensors (IMU) driver interface */
+    dev_ctx_imu.write_reg = platform_write_imu;
+    dev_ctx_imu.read_reg = platform_read_imu;
+    dev_ctx_imu.handle = (void *)&imu_bus;
+    /* Initialize magnetic sensors driver interface */
+    dev_ctx_mag.write_reg = platform_write_mag;
+    dev_ctx_mag.read_reg = platform_read_mag;
+    dev_ctx_mag.handle = (void *)&mag_bus;
+    /* Init test platform */
+    platform_init();
+    /* Wait sensor boot time */
+    platform_delay(BOOT_TIME);
+    /* Check device ID */
+    lsm9ds1_dev_id_get(&dev_ctx_mag, &dev_ctx_imu, &whoamI);
 
-  if (whoamI.imu != LSM9DS1_IMU_ID || whoamI.mag != LSM9DS1_MAG_ID) {
-    while (1) {
-      /* manage here device not found */
+    if (whoamI.imu != LSM9DS1_IMU_ID || whoamI.mag != LSM9DS1_MAG_ID) {
+        while (1) {
+            /* manage here device not found */
+        }
     }
-  }
 
-  /* Restore default configuration */
-  lsm9ds1_dev_reset_set(&dev_ctx_mag, &dev_ctx_imu, PROPERTY_ENABLE);
+    /* Restore default configuration */
+    lsm9ds1_dev_reset_set(&dev_ctx_mag, &dev_ctx_imu, PROPERTY_ENABLE);
 
-  do {
-    lsm9ds1_dev_reset_get(&dev_ctx_mag, &dev_ctx_imu, &rst);
-  } while (rst);
+    do {
+        lsm9ds1_dev_reset_get(&dev_ctx_mag, &dev_ctx_imu, &rst);
+    } while (rst);
 
-  /* Enable Block Data Update */
-  lsm9ds1_block_data_update_set(&dev_ctx_mag, &dev_ctx_imu,
-                                PROPERTY_ENABLE);
-  /* Initialize test variable */
-  st_result = ST_PASS;
-  /*
-   * START MAGNETOMETER SELF TEST PROCEDURE
-   */
-  /* Set Full Scale */
-  lsm9ds1_mag_full_scale_set(&dev_ctx_mag, LSM9DS1_12Ga);
-  /* Set Output Data Rate */
-  lsm9ds1_mag_data_rate_set(&dev_ctx_mag, LSM9DS1_MAG_LP_80Hz);
-  /* Wait stable output */
-  platform_delay(WAIT_TIME_MAG);
+    /* Enable Block Data Update */
+    lsm9ds1_block_data_update_set(&dev_ctx_mag, &dev_ctx_imu, PROPERTY_ENABLE);
+    /* Initialize test variable */
+    st_result = ST_PASS;
+    /*
+    * START MAGNETOMETER SELF TEST PROCEDURE
+    */
+    /* Set Full Scale */
+    lsm9ds1_mag_full_scale_set(&dev_ctx_mag, LSM9DS1_12Ga);
+    /* Set Output Data Rate */
+    lsm9ds1_mag_data_rate_set(&dev_ctx_mag, LSM9DS1_MAG_LP_80Hz);
+    /* Wait stable output */
+    platform_delay(WAIT_TIME_MAG);
 
-  /* Check if new value available */
-  do {
-    lsm9ds1_dev_status_get(&dev_ctx_mag, &dev_ctx_imu, &reg);
-  } while (!reg.status_mag.zyxda);
-
-  /* Read dummy data and discard it */
-  lsm9ds1_magnetic_raw_get(&dev_ctx_mag, data_raw);
-  /* Read samples and get the average vale for each axis */
-  memset(val_st_off, 0x00, 3 * sizeof(float));
-
-  for (i = 0; i < SAMPLES; i++) {
     /* Check if new value available */
     do {
-      lsm9ds1_dev_status_get(&dev_ctx_mag, &dev_ctx_imu, &reg);
+        lsm9ds1_dev_status_get(&dev_ctx_mag, &dev_ctx_imu, &reg);
     } while (!reg.status_mag.zyxda);
 
-    /* Read data and accumulate */
+    /* Read dummy data and discard it */
     lsm9ds1_magnetic_raw_get(&dev_ctx_mag, data_raw);
+    /* Read samples and get the average vale for each axis */
+    memset(val_st_off, 0x00, 3 * sizeof(float));
 
-    for (j = 0; j < 3; j++) {
-      val_st_off[j] += lsm9ds1_from_fs12gauss_to_mG(data_raw[j]);
+    for (i = 0; i < SAMPLES; i++) {
+        /* Check if new value available */
+        do {
+            lsm9ds1_dev_status_get(&dev_ctx_mag, &dev_ctx_imu, &reg);
+        } while (!reg.status_mag.zyxda);
+
+        /* Read data and accumulate */
+        lsm9ds1_magnetic_raw_get(&dev_ctx_mag, data_raw);
+
+        for (j = 0; j < 3; j++) {
+            val_st_off[j] += lsm9ds1_from_fs12gauss_to_mG(data_raw[j]);
+        }
+      }
+
+    /* Calculate the average values */
+    for (i = 0; i < 3; i++) {
+        val_st_off[i] /= SAMPLES;
     }
-  }
 
-  /* Calculate the average values */
-  for (i = 0; i < 3; i++) {
-    val_st_off[i] /= SAMPLES;
-  }
+    /* Enable Self Test */
+    lsm9ds1_mag_self_test_set(&dev_ctx_mag, PROPERTY_ENABLE);
+    /* Wait stable output */
+    platform_delay(WAIT_TIME_MAG);
 
-  /* Enable Self Test */
-  lsm9ds1_mag_self_test_set(&dev_ctx_mag, PROPERTY_ENABLE);
-  /* Wait stable output */
-  platform_delay(WAIT_TIME_MAG);
-
-  /* Check if new value available */
-  do {
-    lsm9ds1_dev_status_get(&dev_ctx_mag, &dev_ctx_imu, &reg);
-  } while (!reg.status_mag.zyxda);
-
-  /* Read dummy data and discard it */
-  lsm9ds1_magnetic_raw_get(&dev_ctx_mag, data_raw);
-  /* Read samples and get the average vale for each axis */
-  memset(val_st_on, 0x00, 3 * sizeof(float));
-
-  for (i = 0; i < SAMPLES; i++) {
     /* Check if new value available */
     do {
-      lsm9ds1_dev_status_get(&dev_ctx_mag, &dev_ctx_imu, &reg);
+        lsm9ds1_dev_status_get(&dev_ctx_mag, &dev_ctx_imu, &reg);
     } while (!reg.status_mag.zyxda);
 
-    /* Read data and accumulate */
+    /* Read dummy data and discard it */
     lsm9ds1_magnetic_raw_get(&dev_ctx_mag, data_raw);
+    /* Read samples and get the average vale for each axis */
+    memset(val_st_on, 0x00, 3 * sizeof(float));
 
-    for (j = 0; j < 3; j++) {
-      val_st_on[j] += lsm9ds1_from_fs12gauss_to_mG(data_raw[j]);
+    for (i = 0; i < SAMPLES; i++) {
+        /* Check if new value available */
+        do {
+            lsm9ds1_dev_status_get(&dev_ctx_mag, &dev_ctx_imu, &reg);
+        } while (!reg.status_mag.zyxda);
+
+        /* Read data and accumulate */
+        lsm9ds1_magnetic_raw_get(&dev_ctx_mag, data_raw);
+
+        for (j = 0; j < 3; j++) {
+            val_st_on[j] += lsm9ds1_from_fs12gauss_to_mG(data_raw[j]);
+        }
     }
-  }
 
-  /* Calculate the average values */
-  for (i = 0; i < 3; i++) {
-    val_st_on[i] /= SAMPLES;
-  }
-
-  /* Calculate the values for self test */
-  for (i = 0; i < 3; i++) {
-    test_val[i] = fabs((val_st_on[i] - val_st_off[i]));
-  }
-
-  /* Check self test limit */
-  for (i = 0; i < 3; i++) {
-    if (( min_st_mag_limit[i] > test_val[i] ) ||
-        ( test_val[i] > max_st_mag_limit[i])) {
-      st_result = ST_FAIL;
+    /* Calculate the average values */
+    for (i = 0; i < 3; i++) {
+        val_st_on[i] /= SAMPLES;
     }
-  }
 
-  /* Disable Self Test */
-  lsm9ds1_mag_self_test_set(&dev_ctx_mag, PROPERTY_DISABLE);
-  /* Disable sensor. */
-  lsm9ds1_mag_data_rate_set(&dev_ctx_mag, LSM9DS1_MAG_POWER_DOWN);
-  /*
-   * END MAGNETOMETER SELF TEST PROCEDURE
-   */
-  /*
-   * START ACCELEROMETER SELF TEST PROCEDURE
-   */
-  /* Set Full Scale */
-  lsm9ds1_xl_full_scale_set(&dev_ctx_imu, LSM9DS1_2g);
-  /* Set Output Data Rate */
-  lsm9ds1_imu_data_rate_set(&dev_ctx_imu, LSM9DS1_GY_OFF_XL_50Hz);
-  /* Wait stable output */
-  platform_delay(WAIT_TIME_XL);
+    /* Calculate the values for self test */
+    for (i = 0; i < 3; i++) {
+        test_val[i] = fabs((val_st_on[i] - val_st_off[i]));
+    }
 
-  /* Check if new value available */
-  do {
-    lsm9ds1_dev_status_get(&dev_ctx_imu, &dev_ctx_imu, &reg);
-  } while (!reg.status_imu.xlda);
+    /* Check self test limit */
+    for (i = 0; i < 3; i++) {
+        if (( min_st_mag_limit[i] > test_val[i] ) || ( test_val[i] > max_st_mag_limit[i])) {
+            st_result = ST_FAIL;
+        }
+    }
 
-  /* Read dummy data and discard it */
-  lsm9ds1_acceleration_raw_get(&dev_ctx_imu, data_raw);
-  /* Read samples and get the average vale for each axis */
-  memset(val_st_off, 0x00, 3 * sizeof(float));
+    /* Disable Self Test */
+    lsm9ds1_mag_self_test_set(&dev_ctx_mag, PROPERTY_DISABLE);
+    /* Disable sensor. */
+    lsm9ds1_mag_data_rate_set(&dev_ctx_mag, LSM9DS1_MAG_POWER_DOWN);
+    /*
+    * END MAGNETOMETER SELF TEST PROCEDURE
+    */
+    /*
+    * START ACCELEROMETER SELF TEST PROCEDURE
+    */
+    /* Set Full Scale */
+    lsm9ds1_xl_full_scale_set(&dev_ctx_imu, LSM9DS1_2g);
+    /* Set Output Data Rate */
+    lsm9ds1_imu_data_rate_set(&dev_ctx_imu, LSM9DS1_GY_OFF_XL_50Hz);
+    /* Wait stable output */
+    platform_delay(WAIT_TIME_XL);
 
-  for (i = 0; i < SAMPLES; i++) {
     /* Check if new value available */
     do {
-      lsm9ds1_dev_status_get(&dev_ctx_imu, &dev_ctx_imu, &reg);
+        lsm9ds1_dev_status_get(&dev_ctx_imu, &dev_ctx_imu, &reg);
     } while (!reg.status_imu.xlda);
 
-    /* Read data and accumulate */
+    /* Read dummy data and discard it */
     lsm9ds1_acceleration_raw_get(&dev_ctx_imu, data_raw);
+    /* Read samples and get the average vale for each axis */
+    memset(val_st_off, 0x00, 3 * sizeof(float));
 
-    for (j = 0; j < 3; j++) {
-      val_st_off[j] += lsm9ds1_from_fs2g_to_mg(data_raw[j]);
+    for (i = 0; i < SAMPLES; i++) {
+        /* Check if new value available */
+        do {
+            lsm9ds1_dev_status_get(&dev_ctx_imu, &dev_ctx_imu, &reg);
+        } while (!reg.status_imu.xlda);
+
+        /* Read data and accumulate */
+        lsm9ds1_acceleration_raw_get(&dev_ctx_imu, data_raw);
+
+        for (j = 0; j < 3; j++) {
+            val_st_off[j] += lsm9ds1_from_fs2g_to_mg(data_raw[j]);
+        }
     }
-  }
 
-  /* Calculate the average values */
-  for (i = 0; i < 3; i++) {
-    val_st_off[i] /= SAMPLES;
-  }
+    /* Calculate the average values */
+    for (i = 0; i < 3; i++) {
+        val_st_off[i] /= SAMPLES;
+    }
 
-  /* Enable Self Test */
-  lsm9ds1_xl_self_test_set(&dev_ctx_imu, PROPERTY_ENABLE);
-  /* Wait stable output */
-  platform_delay(WAIT_TIME_XL);
+    /* Enable Self Test */
+    lsm9ds1_xl_self_test_set(&dev_ctx_imu, PROPERTY_ENABLE);
+    /* Wait stable output */
+    platform_delay(WAIT_TIME_XL);
 
-  /* Check if new value available */
-  do {
-    lsm9ds1_dev_status_get(&dev_ctx_imu, &dev_ctx_imu, &reg);
-  } while (!reg.status_imu.xlda);
-
-  /* Read dummy data and discard it */
-  lsm9ds1_acceleration_raw_get(&dev_ctx_imu, data_raw);
-  /* Read samples and get the average vale for each axis */
-  memset(val_st_on, 0x00, 3 * sizeof(float));
-
-  for (i = 0; i < SAMPLES; i++) {
     /* Check if new value available */
     do {
-      lsm9ds1_dev_status_get(&dev_ctx_imu, &dev_ctx_imu, &reg);
+        lsm9ds1_dev_status_get(&dev_ctx_imu, &dev_ctx_imu, &reg);
     } while (!reg.status_imu.xlda);
 
-    /* Read data and accumulate */
+    /* Read dummy data and discard it */
     lsm9ds1_acceleration_raw_get(&dev_ctx_imu, data_raw);
+    /* Read samples and get the average vale for each axis */
+    memset(val_st_on, 0x00, 3 * sizeof(float));
 
-    for (j = 0; j < 3; j++) {
-      val_st_on[j] += lsm9ds1_from_fs2g_to_mg(data_raw[j]);
+    for (i = 0; i < SAMPLES; i++) {
+        /* Check if new value available */
+        do {
+            lsm9ds1_dev_status_get(&dev_ctx_imu, &dev_ctx_imu, &reg);
+        } while (!reg.status_imu.xlda);
+
+        /* Read data and accumulate */
+        lsm9ds1_acceleration_raw_get(&dev_ctx_imu, data_raw);
+
+        for (j = 0; j < 3; j++) {
+           val_st_on[j] += lsm9ds1_from_fs2g_to_mg(data_raw[j]);
+        }
     }
-  }
 
-  /* Calculate the average values */
-  for (i = 0; i < 3; i++) {
-    val_st_on[i] /= SAMPLES;
-  }
-
-  /* Calculate the values for self test */
-  for (i = 0; i < 3; i++) {
-    test_val[i] = fabs((val_st_on[i] - val_st_off[i]));
-  }
-
-  /* Check self test limit */
-  for (i = 0; i < 3; i++) {
-    if (( min_st_xl_limit[i] > test_val[i] ) ||
-        ( test_val[i] > max_st_xl_limit[i])) {
-      st_result = ST_FAIL;
+    /* Calculate the average values */
+    for (i = 0; i < 3; i++) {
+        val_st_on[i] /= SAMPLES;
     }
-  }
 
-  /* Disable Self Test */
-  lsm9ds1_xl_self_test_set(&dev_ctx_imu, PROPERTY_DISABLE);
-  /* Disable sensor. */
-  lsm9ds1_imu_data_rate_set(&dev_ctx_imu, LSM9DS1_IMU_OFF);
-  /*
-   * END ACCELEROMETER SELF TEST PROCEDURE
-   */
-  /*
-   * START GYROSCOPE SELF TEST PROCEDURE
-   */
-  /* Set Full Scale */
-  lsm9ds1_gy_full_scale_set(&dev_ctx_imu, LSM9DS1_2000dps);
-  /* Set Output Data Rate */
-  lsm9ds1_imu_data_rate_set(&dev_ctx_imu, LSM9DS1_XL_OFF_GY_238Hz);
-  /* Wait stable output */
-  platform_delay(WAIT_TIME_GY);
+    /* Calculate the values for self test */
+    for (i = 0; i < 3; i++) {
+        test_val[i] = fabs((val_st_on[i] - val_st_off[i]));
+    }
 
-  /* Check if new value available */
-  do {
-    lsm9ds1_dev_status_get(&dev_ctx_imu, &dev_ctx_imu, &reg);
-  } while (!reg.status_imu.gda);
+    /* Check self test limit */
+    for (i = 0; i < 3; i++) {
+        if (( min_st_xl_limit[i] > test_val[i] ) || ( test_val[i] > max_st_xl_limit[i])) {
+            st_result = ST_FAIL;
+        }
+    }
 
-  /* Read dummy data and discard it */
-  lsm9ds1_angular_rate_raw_get(&dev_ctx_imu, data_raw);
-  /* Read samples and get the average vale for each axis */
-  memset(val_st_off, 0x00, 3 * sizeof(float));
+    /* Disable Self Test */
+    lsm9ds1_xl_self_test_set(&dev_ctx_imu, PROPERTY_DISABLE);
+    /* Disable sensor. */
+    lsm9ds1_imu_data_rate_set(&dev_ctx_imu, LSM9DS1_IMU_OFF);
+    /*
+    * END ACCELEROMETER SELF TEST PROCEDURE
+    */
+    /*
+    * START GYROSCOPE SELF TEST PROCEDURE
+    */
+    /* Set Full Scale */
+    lsm9ds1_gy_full_scale_set(&dev_ctx_imu, LSM9DS1_2000dps);
+    /* Set Output Data Rate */
+    lsm9ds1_imu_data_rate_set(&dev_ctx_imu, LSM9DS1_XL_OFF_GY_238Hz);
+    /* Wait stable output */
+    platform_delay(WAIT_TIME_GY);
 
-  for (i = 0; i < SAMPLES; i++) {
     /* Check if new value available */
     do {
-      lsm9ds1_dev_status_get(&dev_ctx_imu, &dev_ctx_imu, &reg);
+        lsm9ds1_dev_status_get(&dev_ctx_imu, &dev_ctx_imu, &reg);
     } while (!reg.status_imu.gda);
 
-    /* Read data and accumulate */
+    /* Read dummy data and discard it */
     lsm9ds1_angular_rate_raw_get(&dev_ctx_imu, data_raw);
+    /* Read samples and get the average vale for each axis */
+    memset(val_st_off, 0x00, 3 * sizeof(float));
 
-    for (j = 0; j < 3; j++) {
-      val_st_off[j] += lsm9ds1_from_fs2000dps_to_mdps(data_raw[j]);
+    for (i = 0; i < SAMPLES; i++) {
+        /* Check if new value available */
+        do {
+            lsm9ds1_dev_status_get(&dev_ctx_imu, &dev_ctx_imu, &reg);
+        } while (!reg.status_imu.gda);
+
+        /* Read data and accumulate */
+        lsm9ds1_angular_rate_raw_get(&dev_ctx_imu, data_raw);
+
+        for (j = 0; j < 3; j++) {
+            val_st_off[j] += lsm9ds1_from_fs2000dps_to_mdps(data_raw[j]);
+        }
     }
-  }
 
-  /* Calculate the average values */
-  for (i = 0; i < 3; i++) {
-    val_st_off[i] /= SAMPLES;
-  }
+    /* Calculate the average values */
+    for (i = 0; i < 3; i++) {
+        val_st_off[i] /= SAMPLES;
+    }
 
-  /* Enable Self Test */
-  lsm9ds1_gy_self_test_set(&dev_ctx_imu, PROPERTY_ENABLE);
-  /* Wait stable output */
-  platform_delay(WAIT_TIME_GY);
+    /* Enable Self Test */
+    lsm9ds1_gy_self_test_set(&dev_ctx_imu, PROPERTY_ENABLE);
+    /* Wait stable output */
+    platform_delay(WAIT_TIME_GY);
 
-  /* Check if new value available */
-  do {
-    lsm9ds1_dev_status_get(&dev_ctx_imu, &dev_ctx_imu, &reg);
-  } while (!reg.status_imu.gda);
-
-  /* Read dummy data and discard it */
-  lsm9ds1_angular_rate_raw_get(&dev_ctx_imu, data_raw);
-  /* Read samples and get the average vale for each axis */
-  memset(val_st_on, 0x00, 3 * sizeof(float));
-
-  for (i = 0; i < SAMPLES; i++) {
     /* Check if new value available */
     do {
-      lsm9ds1_dev_status_get(&dev_ctx_imu, &dev_ctx_imu, &reg);
+        lsm9ds1_dev_status_get(&dev_ctx_imu, &dev_ctx_imu, &reg);
     } while (!reg.status_imu.gda);
 
-    /* Read data and accumulate */
+    /* Read dummy data and discard it */
     lsm9ds1_angular_rate_raw_get(&dev_ctx_imu, data_raw);
+    /* Read samples and get the average vale for each axis */
+    memset(val_st_on, 0x00, 3 * sizeof(float));
 
-    for (j = 0; j < 3; j++) {
-      val_st_on[j] += lsm9ds1_from_fs2000dps_to_mdps(data_raw[j]);
+    for (i = 0; i < SAMPLES; i++) {
+        /* Check if new value available */
+        do {
+            lsm9ds1_dev_status_get(&dev_ctx_imu, &dev_ctx_imu, &reg);
+        } while (!reg.status_imu.gda);
+
+        /* Read data and accumulate */
+        lsm9ds1_angular_rate_raw_get(&dev_ctx_imu, data_raw);
+
+        for (j = 0; j < 3; j++) {
+            val_st_on[j] += lsm9ds1_from_fs2000dps_to_mdps(data_raw[j]);
+        }
     }
-  }
 
-  /* Calculate the average values */
-  for (i = 0; i < 3; i++) {
-    val_st_on[i] /= SAMPLES;
-  }
-
-  /* Calculate the values for self test */
-  for (i = 0; i < 3; i++) {
-    test_val[i] = fabs((val_st_on[i] - val_st_off[i]));
-  }
-
-  /* Check self test limit */
-  for (i = 0; i < 3; i++) {
-    if (( min_st_gy_limit[i] > test_val[i] ) ||
-        ( test_val[i] > max_st_gy_limit[i])) {
-      st_result = ST_FAIL;
+    /* Calculate the average values */
+    for (i = 0; i < 3; i++) {
+        val_st_on[i] /= SAMPLES;
     }
-  }
 
-  /* Disable Self Test */
-  lsm9ds1_gy_self_test_set(&dev_ctx_imu, PROPERTY_DISABLE);
-  /* Disable sensor. */
-  lsm9ds1_imu_data_rate_set(&dev_ctx_imu, LSM9DS1_IMU_OFF);
+    /* Calculate the values for self test */
+    for (i = 0; i < 3; i++) {
+        test_val[i] = fabs((val_st_on[i] - val_st_off[i]));
+    }
 
-  /*
-   * END GYROSCOPE SELF TEST PROCEDURE
-   */
+    /* Check self test limit */
+    for (i = 0; i < 3; i++) {
+        if (( min_st_gy_limit[i] > test_val[i] ) || ( test_val[i] > max_st_gy_limit[i])) {
+            st_result = ST_FAIL;
+        }
+    }
 
-  if (st_result == ST_PASS) {
-    sprintf((char *)tx_buffer, "Self Test - PASS\r\n" );
-  }
+    /* Disable Self Test */
+    lsm9ds1_gy_self_test_set(&dev_ctx_imu, PROPERTY_DISABLE);
+    /* Disable sensor. */
+    lsm9ds1_imu_data_rate_set(&dev_ctx_imu, LSM9DS1_IMU_OFF);
 
-  else {
-    sprintf((char *)tx_buffer, "Self Test - FAIL\r\n" );
-  }
+    /*
+    * END GYROSCOPE SELF TEST PROCEDURE
+    */
 
-  tx_com(tx_buffer, strlen((char const *)tx_buffer));
+    if (st_result == ST_PASS) {
+        sprintf((char *)tx_buffer, "Self Test - PASS\r\n" );
+    }
+
+    else {
+        sprintf((char *)tx_buffer, "Self Test - FAIL\r\n" );
+    }
+
+    tx_com(tx_buffer, strlen((char const *)tx_buffer));
 }
 
