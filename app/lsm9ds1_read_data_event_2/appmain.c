@@ -44,7 +44,7 @@ static void root_func(void * arg)
         if (start_pin_value)
         {
             lsm9ds1_read_data_event_loop();
-            task_sleepms(100);
+            // task_sleepms(100);
         }
         else
         {

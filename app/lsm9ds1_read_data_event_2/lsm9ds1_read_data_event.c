@@ -62,6 +62,8 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <time.h>
+#include <sys/time.h>
 
 #include "main.h"
 #include "lsm9ds1_read_data_event.h"
@@ -74,7 +76,6 @@
 
 static int16_t data_raw_acceleration[3];
 static int16_t data_raw_angular_rate[3];
-static int16_t data_raw_magnetic_field[3];
 static float acceleration_mg[3];
 static float angular_rate_mdps[3];
 static float magnetic_field_mgauss[3];
@@ -136,12 +137,17 @@ void lsm9ds1_read_data_event_setup(void)
     lsm9ds1_gy_filter_hp_bandwidth_set(&dev_ctx_imu, LSM9DS1_HP_MEDIUM);
     lsm9ds1_gy_filter_out_path_set(&dev_ctx_imu, LSM9DS1_LPF1_HPF_LPF2_OUT);
     /* Set Output Data Rate / Power mode */
-    lsm9ds1_imu_data_rate_set(&dev_ctx_imu, LSM9DS1_IMU_59Hz5);
-    lsm9ds1_mag_data_rate_set(&dev_ctx_mag, LSM9DS1_MAG_UHP_10Hz);
+    lsm9ds1_imu_data_rate_set(&dev_ctx_imu, LSM9DS1_IMU_952Hz);
+    lsm9ds1_mag_data_rate_set(&dev_ctx_mag, LSM9DS1_MAG_POWER_DOWN);
 }
 
 void lsm9ds1_read_data_event_loop(void)
 {
+    struct timeval tv;
+    uint64_t tmp_time;
+    int data_size = 0;
+    int buf_offset = 0;
+
     memset(acceleration_mg, 0, sizeof(acceleration_mg));
     memset(angular_rate_mdps, 0, sizeof(angular_rate_mdps));
     memset(magnetic_field_mgauss, 0, sizeof(magnetic_field_mgauss));
@@ -150,52 +156,60 @@ void lsm9ds1_read_data_event_loop(void)
     lsm9ds1_dev_status_get(&dev_ctx_mag, &dev_ctx_imu, &reg);
 
     if ( reg.status_imu.xlda && reg.status_imu.gda ) {
+        gettimeofday(&tv, NULL);
+
         /* Read imu data */
         memset(data_raw_acceleration, 0x00, 3 * sizeof(int16_t));
         memset(data_raw_angular_rate, 0x00, 3 * sizeof(int16_t));
         lsm9ds1_acceleration_raw_get(&dev_ctx_imu, data_raw_acceleration);
         lsm9ds1_angular_rate_raw_get(&dev_ctx_imu, data_raw_angular_rate);
+
         acceleration_mg[0] = lsm9ds1_from_fs4g_to_mg(data_raw_acceleration[0]);
         acceleration_mg[1] = lsm9ds1_from_fs4g_to_mg(data_raw_acceleration[1]);
         acceleration_mg[2] = lsm9ds1_from_fs4g_to_mg(data_raw_acceleration[2]);
         angular_rate_mdps[0] = lsm9ds1_from_fs2000dps_to_mdps(data_raw_angular_rate[0]);
         angular_rate_mdps[1] = lsm9ds1_from_fs2000dps_to_mdps(data_raw_angular_rate[1]);
         angular_rate_mdps[2] = lsm9ds1_from_fs2000dps_to_mdps(data_raw_angular_rate[2]);
-    }
+        magnetic_field_mgauss[0] = 0.0;
+        magnetic_field_mgauss[1] = 0.0;
+        magnetic_field_mgauss[2] = 0.0;
 
-    if ( reg.status_mag.zyxda ) {
-        /* Read magnetometer data */
-        memset(data_raw_magnetic_field, 0x00, 3 * sizeof(int16_t));
-        lsm9ds1_magnetic_raw_get(&dev_ctx_mag, data_raw_magnetic_field);
-        magnetic_field_mgauss[0] = lsm9ds1_from_fs16gauss_to_mG(data_raw_magnetic_field[0]);
-        magnetic_field_mgauss[1] = lsm9ds1_from_fs16gauss_to_mG(data_raw_magnetic_field[1]);
-        magnetic_field_mgauss[2] = lsm9ds1_from_fs16gauss_to_mG(data_raw_magnetic_field[2]);
-    }
+        tx_buffer[0] = 0x76; // start code 1
+        tx_buffer[1] = 0x07; // start code 2
+        tx_buffer[2] = 0x03; // start code 3
+        tx_buffer[3] = 0;    // data size
+        buf_offset = 4;
 
-    int data_size = 0;
-    int buf_offset = 0;
-    tx_buffer[0] = 0x76; // start code 1
-    tx_buffer[1] = 0x07; // start code 2
-    tx_buffer[2] = 0x03; // start code 3
-    tx_buffer[3] = 0;    // data size
-    buf_offset = 4;
-
-    data_size = sizeof(acceleration_mg);
-    memcpy(&tx_buffer[buf_offset], acceleration_mg, data_size);
-    buf_offset += data_size;
-
-    data_size = sizeof(angular_rate_mdps);
-    memcpy(&tx_buffer[buf_offset], angular_rate_mdps, data_size);
-    buf_offset += data_size;
-
-    data_size = sizeof(magnetic_field_mgauss);
-    memcpy(&tx_buffer[buf_offset], magnetic_field_mgauss, data_size);
-    buf_offset += data_size;
-
-    tx_buffer[buf_offset] = '\n';
-    buf_offset += 1;
-
-    tx_buffer[3] = buf_offset - 4;
+        tmp_time = tv.tv_sec;
+        data_size = sizeof(tmp_time);
+        memcpy(&tx_buffer[buf_offset], &tmp_time, data_size);
+        buf_offset += data_size;
     
-    tx_com(tx_buffer, buf_offset);
+        tmp_time = tv.tv_usec;
+        data_size = sizeof(tmp_time);
+        memcpy(&tx_buffer[buf_offset], &tmp_time, data_size);
+        buf_offset += data_size;
+
+        data_size = sizeof(acceleration_mg);
+        memcpy(&tx_buffer[buf_offset], acceleration_mg, data_size);
+        buf_offset += data_size;
+
+        data_size = sizeof(angular_rate_mdps);
+        memcpy(&tx_buffer[buf_offset], angular_rate_mdps, data_size);
+        buf_offset += data_size;
+
+        data_size = sizeof(magnetic_field_mgauss);
+        memcpy(&tx_buffer[buf_offset], magnetic_field_mgauss, data_size);
+        buf_offset += data_size;
+
+        tx_buffer[buf_offset + 0] = 0x03; // end code 1
+        tx_buffer[buf_offset + 1] = 0x07; // end code 2
+        tx_buffer[buf_offset + 2] = 0x76; // end code 3
+        tx_buffer[buf_offset + 3] = '\n'; // new line
+        buf_offset += 4;
+
+        tx_buffer[3] = buf_offset - 4;
+
+        tx_com(tx_buffer, buf_offset);
+    }
 }

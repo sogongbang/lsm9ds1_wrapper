@@ -23,6 +23,9 @@ set_cache(NRF5SDK__TWI_ENABLED TRUE BOOL)
 
 set_cache(UBINOS__BSP__BOARD_VARIATION_NAME "ADAFRUITNRF52840E" STRING)
 
+set_cache(NRF5SDK__DTTY_NRF_BLE_UART_READ_BUFFER_SIZE "512" STRING)
+set_cache(NRF5SDK__DTTY_NRF_BLE_UART_WRITE_BUFFER_SIZE "1024 * 100" STRING)
+
 include(${PROJECT_UBINOS_DIR}/config/ubinos_nrf52840dk_softdevice.cmake)
 include(${PROJECT_LIBRARY_DIR}/seggerrtt_wrapper/config/seggerrtt.cmake)
 include(${PROJECT_LIBRARY_DIR}/nrf5sdk_wrapper/config/nrf5sdk.cmake)
